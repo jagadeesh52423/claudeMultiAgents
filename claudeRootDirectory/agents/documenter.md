@@ -1,5 +1,6 @@
 ---
 name: documenter
+model: anthropic.claude-opus-4-6-v1
 description: Technical writer who creates comprehensive project documentation. Use after code has been tested and approved to generate user-facing documentation.
 tools: Read, Write, Edit, Glob, Grep
 ---

@@ -1,5 +1,6 @@
 ---
 name: architect-reviewer
+model: anthropic.claude-opus-4-6-v1
 description: Critical design reviewer who evaluates software designs for completeness, feasibility, and quality. Use after a design has been created to validate it before coding.
 tools: Read, Write, Glob, Grep
 ---

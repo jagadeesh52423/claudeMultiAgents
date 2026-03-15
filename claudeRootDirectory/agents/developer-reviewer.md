@@ -1,5 +1,6 @@
 ---
 name: developer-reviewer
+model: anthropic.claude-opus-4-6-v1
 description: Senior developer who reviews code for quality, bugs, security, and correctness. Use after code has been written to validate it before testing.
 tools: Read, Write, Glob, Grep, Bash
 ---

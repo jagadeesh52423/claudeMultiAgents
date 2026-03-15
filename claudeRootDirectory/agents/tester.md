@@ -1,5 +1,6 @@
 ---
 name: tester
+model: anthropic.claude-opus-4-6-v1
 description: QA engineer who tests code by actually running it and analyzing for bugs. Use after code has been reviewed and approved to verify it works correctly.
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---

@@ -1,5 +1,6 @@
 ---
 name: architect-designer
+model: anthropic.claude-opus-4-6-v1
 description: Senior software architect who creates detailed system designs from requirements. Use when a new feature or project needs a design before coding begins.
 tools: Read, Write, Glob, Grep
 ---

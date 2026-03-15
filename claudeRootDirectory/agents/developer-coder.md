@@ -1,5 +1,6 @@
 ---
 name: developer-coder
+model: anthropic.claude-opus-4-6-v1
 description: Senior developer who writes production-quality code from designs. Use when an approved design needs to be implemented or when code needs to be fixed based on review/test feedback.
 tools: Read, Write, Edit, Bash, Glob, Grep
 ---
