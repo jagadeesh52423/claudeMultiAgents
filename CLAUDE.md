@@ -79,12 +79,69 @@ This project uses a team of specialized AI subagents to collaboratively build so
 4. Integration points to test?
 5. Documentation needed?
 
+## Workforce Scaling — Hire and Fire
+
+**Scale agent count based on workload. More independent tasks = more parallel agents.**
+
+### Scaling Rules
+- **N independent tasks → up to N coders** (capped at 6)
+- **Scale reviewers**: 1 reviewer per 2-3 coders
+- **Scale testers**: 1 tester per independent stream
+- **Architects stay lean**: 1 designer + 1 reviewer (design before scaling)
+- **Fire when done**: Shut down agents once their tasks are DONE
+
+### Naming: `coder-auth`, `coder-payments`, `reviewer-backend`, `tester-api` (by domain)
+
+### Scaling Table
+| TODO Tasks | Coders | Reviewers | Testers |
+|-----------|--------|-----------|---------|
+| 1 | 1 | 1 | 1 |
+| 2-3 | 2-3 | 1-2 | 1-2 |
+| 4-6 | 4-6 | 2-3 | 2-3 |
+| 7+ | Cap 6 | Cap 3 | Cap 3 |
+
+## Task Affinity — Same Developer, Related Tasks
+
+**Assign related tasks to the same agent. Resume > fresh spawn for domain continuity.**
+
+### Rules
+1. **Same module → same agent**: All auth tasks → `coder-auth`
+2. **Bug fix for code agent wrote → resume that agent**
+3. **Reviewer who reviewed → same reviewer for re-review**
+4. **Tester who tested → same tester for regression**
+
+### Agent Registry (tracked in FULL_TASKS.md)
+```markdown
+## Agent Registry
+| Agent ID | Name | Domain | Tasks |
+|----------|------|--------|-------|
+| {id} | coder-auth | Auth, sessions | TASK-001, TASK-005 |
+| {id} | coder-payments | Billing | TASK-002, TASK-006 |
+```
+
+### Task Grouping Flow
+1. Group TODO tasks by domain (files they touch)
+2. Assign each group to one agent (affinity)
+3. Order tasks within group by dependency
+4. Spawn agents per group — groups run in PARALLEL, tasks within group run SEQUENTIAL
+
 ### Announce Before Starting (MANDATORY)
+
+Single task:
 ```
 📋 Task: TASK-XXX — {title}
 Complexity: {level}
 Agents: {list}
 Workflow: {phases}
+```
+
+Multi-task batch:
+```
+📋 Batch: {N} tasks across {M} domains
+Affinity Groups:
+  - Auth (coder-auth): TASK-001, TASK-005
+  - Payments (coder-payments): TASK-002, TASK-006
+Workflow: Design → Parallel Code → Parallel Review → Parallel Test
 ```
 
 ## Workflows by Complexity
@@ -138,9 +195,10 @@ Same as COMPLEX, plus:
 
 | Scenario | Action |
 |----------|--------|
-| Revision loop (same agent) | **Resume** with feedback delta only |
-| New task (same agent) | **Fresh** |
-| Different agent, same workflow | **Fresh** with artifact paths |
+| Revision loop (same agent, same task) | **Resume** — feedback delta only |
+| Related task, same domain (affinity) | **Resume** — agent knows the domain, just describe new task |
+| Unrelated new task | **Fresh** — different context |
+| Different agent, same workflow | **Fresh** — pass artifact paths |
 
 ## Shared Artifacts
 ```
@@ -159,5 +217,9 @@ FEATURE_DOCS.md    ← documenter writes
 - Max iterations: 3 for design/code, 2 for testing
 - **Resume** for revision loops, **fresh** for new tasks
 - Spawn only agents the task complexity requires
+- **Scale agents with workload** — N independent tasks = N parallel coders
+- **Use task affinity** — related tasks → same agent, resume for domain continuity
+- **Fire idle agents** — shut down when domain tasks are DONE
+- **Track Agent Registry** in FULL_TASKS.md for resume mapping
 - Tester MUST run code — ask user to start server
 - Reviewer MUST trace values across files
