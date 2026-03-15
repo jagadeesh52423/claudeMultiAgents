@@ -1,6 +1,6 @@
 # Multi-Agent Software Development System
 
-This project uses a team of specialized AI subagents to collaboratively build software — spawned on-demand based on task complexity, not all-at-once.
+This project uses a team of specialized AI subagents — always parallel, always as a team. No sequential mode.
 
 ## Agent Catalog
 
@@ -36,6 +36,12 @@ This project uses a team of specialized AI subagents to collaboratively build so
 - `DONE` — Completed and verified
 - `BLOCKED` — Waiting on something
 
+## Agent Registry
+| Agent ID | Name | Domain | Tasks |
+|----------|------|--------|-------|
+| {id} | coder-auth | Auth, sessions | TASK-001, TASK-005 |
+| {id} | coder-payments | Billing | TASK-002, TASK-006 |
+
 ## Tasks
 
 ### TASK-001: {Title}
@@ -70,14 +76,7 @@ This project uses a team of specialized AI subagents to collaboratively build so
 | **SIMPLE** | `developer-coder` + `developer-reviewer` | Small bug fix, 1-2 file change |
 | **MODERATE** | `developer-coder` + `developer-reviewer` + `tester` | New endpoint, enhancement, 2-5 files |
 | **COMPLEX** | `architect-designer` + `architect-reviewer` + `developer-coder` + `developer-reviewer` + `tester` | New feature/module, 5+ files |
-| **EPIC** | All 6 agents (+ parallel if applicable) | New project, major system change |
-
-### Complexity Analysis (before spawning)
-1. How many files created/modified?
-2. Design decisions needed?
-3. Existing code understanding required?
-4. Integration points to test?
-5. Documentation needed?
+| **EPIC** | All 6 agents (+ multiple streams) | New project, major system change |
 
 ## Workforce Scaling — Hire and Fire
 
@@ -110,86 +109,55 @@ This project uses a team of specialized AI subagents to collaboratively build so
 3. **Reviewer who reviewed → same reviewer for re-review**
 4. **Tester who tested → same tester for regression**
 
-### Agent Registry (tracked in FULL_TASKS.md)
-```markdown
-## Agent Registry
-| Agent ID | Name | Domain | Tasks |
-|----------|------|--------|-------|
-| {id} | coder-auth | Auth, sessions | TASK-001, TASK-005 |
-| {id} | coder-payments | Billing | TASK-002, TASK-006 |
-```
-
 ### Task Grouping Flow
 1. Group TODO tasks by domain (files they touch)
 2. Assign each group to one agent (affinity)
 3. Order tasks within group by dependency
-4. Spawn agents per group — groups run in PARALLEL, tasks within group run SEQUENTIAL
+4. Spawn agents per group — groups run in PARALLEL, tasks within group handled by same agent
 
-### Announce Before Starting (MANDATORY)
+## Execution — Always Parallel, Always Teams
 
-Single task:
-```
-📋 Task: TASK-XXX — {title}
-Complexity: {level}
-Agents: {list}
-Workflow: {phases}
-```
+**Every execution uses TeamCreate. No sequential mode. No exceptions.**
 
-Multi-task batch:
+### Announce Workforce Plan (MANDATORY)
+
+Multi-task:
 ```
-📋 Batch: {N} tasks across {M} domains
+📋 Workforce Plan
+Tasks: {N} TODO ({M} domains)
+Staffing: {coders} coders, {reviewers} reviewers, {testers} testers
 Affinity Groups:
-  - Auth (coder-auth): TASK-001, TASK-005
-  - Payments (coder-payments): TASK-002, TASK-006
+  - {Domain} ({agent-name}): TASK-XXX, TASK-YYY
 Workflow: Design → Parallel Code → Parallel Review → Parallel Test
 ```
 
-## Workflows by Complexity
+Single task:
+```
+📋 Workforce Plan
+Task: TASK-XXX — {title}
+Complexity: {level}
+Staffing: {agents}
+Workflow: {phases} (all in team)
+```
 
-### TRIVIAL
-1. `developer-coder` → change → FULL_TASKS.md → DONE
+### Workflow (All Complexities)
 
-### SIMPLE
-1. `developer-coder` → code
-2. `developer-reviewer` → CODE_REVIEW.md
-3. If NEEDS_REVISION: resume coder (max 3)
-4. FULL_TASKS.md → DONE
+1. **TeamCreate** → create team
+2. **TaskCreate** → create tasks with `blockedBy` dependencies per phase
+3. **Spawn ALL needed agents in one message** — each joins team, blocked agents wait
+4. **Orchestrate** — unblock tasks, handle revisions, forward questions, manage iterations
+5. **Fire agents** as their domain completes
+6. **TeamDelete** → cleanup when all done
+7. **Update FULL_TASKS.md** → mark DONE, summarize to user
 
-### MODERATE
-1. `developer-coder` → code
-2. `developer-reviewer` → CODE_REVIEW.md
-3. If NEEDS_REVISION: resume coder (max 3)
-4. `tester` → TEST_REPORT.md
-5. If FAILED: resume coder + re-test (max 2)
-6. FULL_TASKS.md → DONE
-
-### COMPLEX
-1. `architect-designer` → DESIGN.md
-2. `architect-reviewer` → DESIGN_REVIEW.md
-3. If NEEDS_REVISION: resume designer (max 3)
-4. `developer-coder` → implement
-5. `developer-reviewer` → CODE_REVIEW.md
-6. If NEEDS_REVISION: resume coder (max 3)
-7. `tester` → TEST_REPORT.md
-8. If FAILED: resume coder + re-test (max 2)
-9. FULL_TASKS.md → DONE
-
-### EPIC
-Same as COMPLEX, plus:
-- `documenter` at end
-- Check DESIGN.md for parallel streams
-- If 2+ independent modules with no shared files → parallel coding/review
-- Use TeamCreate for parallel, TeamDelete to cleanup
-
-## Execution Mode: Sequential vs Parallel
-
-**Default to sequential. Only use parallel for EPIC tasks when DESIGN.md identifies independent streams.**
-
-### Parallel Rules
+### Parallel Safety Rules
 - NEVER let two agents write to the same file
-- Each stream has its own file list
-- Shared files → assigned to ONE stream
-- Same file needed by both → sequential for that file
+- Each agent/domain has its own file list
+- Shared files → assigned to ONE agent only
+- If two agents need same file → assign to one, other waits
+
+### Even Single Tasks Use Teams
+A single TRIVIAL task: `TeamCreate` → spawn coder → complete → `TeamDelete`. Uniform workflow, no special cases.
 
 ## Session Management (Agent Resume)
 
@@ -212,13 +180,13 @@ FEATURE_DOCS.md    ← documenter writes
 
 ## Rules
 - Delegate to agents via Agent tool — don't do their work
+- **Always use TeamCreate** — every execution is a team, no exceptions
 - Read output files after each agent to check results
 - **Update FULL_TASKS.md** on every status change
 - Max iterations: 3 for design/code, 2 for testing
-- **Resume** for revision loops, **fresh** for new tasks
-- Spawn only agents the task complexity requires
+- **Resume** for revision loops and affinity tasks
 - **Scale agents with workload** — N independent tasks = N parallel coders
-- **Use task affinity** — related tasks → same agent, resume for domain continuity
+- **Use task affinity** — related tasks → same agent, resume for continuity
 - **Fire idle agents** — shut down when domain tasks are DONE
 - **Track Agent Registry** in FULL_TASKS.md for resume mapping
 - Tester MUST run code — ask user to start server
