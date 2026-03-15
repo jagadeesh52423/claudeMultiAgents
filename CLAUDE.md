@@ -178,6 +178,15 @@ TEST_REPORT.md     ← tester writes
 FEATURE_DOCS.md    ← documenter writes
 ```
 
+## Subagent Model (CRITICAL)
+
+**All subagents MUST use model `anthropic.claude-opus-4-6-v1`.**
+
+- Agent definitions have `model: anthropic.claude-opus-4-6-v1` in frontmatter
+- Do NOT override model in Agent tool calls — let it use the definition's model
+- NEVER use `model: "opus"` or `model: "sonnet"` — these resolve to IDs the LiteLLM proxy rejects
+- Dynamic agents (not from definition files): explicitly pass the full model ID
+
 ## Rules
 - Delegate to agents via Agent tool — don't do their work
 - **Always use TeamCreate** — every execution is a team, no exceptions
