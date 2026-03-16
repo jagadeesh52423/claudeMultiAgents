@@ -178,14 +178,26 @@ TEST_REPORT.md     ← tester writes
 FEATURE_DOCS.md    ← documenter writes
 ```
 
-## Subagent Model (CRITICAL)
+## Subagent Model (CRITICAL — MUST FOLLOW)
 
-**All subagents MUST use model `anthropic.claude-opus-4-6-v1`.**
+**Every subagent MUST be spawned with `--model anthropic.claude-opus-4-6-v1`.**
 
-- Agent definitions have `model: anthropic.claude-opus-4-6-v1` in frontmatter
-- Do NOT override model in Agent tool calls — let it use the definition's model
-- NEVER use `model: "opus"` or `model: "sonnet"` — these resolve to IDs the LiteLLM proxy rejects
-- Dynamic agents (not from definition files): explicitly pass the full model ID
+This is mandatory. The LiteLLM proxy only accepts this exact model ID. Any alias causes 401.
+
+### How to enforce:
+1. **Agent definitions**: Frontmatter has `model: anthropic.claude-opus-4-6-v1` — already set
+2. **Agent tool calls**: MUST pass `model: "anthropic.claude-opus-4-6-v1"` explicitly. Do NOT omit. Do NOT rely on inheritance.
+3. **NEVER use aliases**: No `model: "opus"`, `model: "sonnet"`, or `model: "haiku"`
+4. **Dynamic/ad-hoc agents**: Same rule — always `--model anthropic.claude-opus-4-6-v1`
+
+### Correct:
+```
+Agent(subagent_type: "developer-coder", model: "anthropic.claude-opus-4-6-v1", ...)
+```
+### WRONG (401 error):
+```
+Agent(subagent_type: "developer-coder", model: "opus", ...)
+```
 
 ## Rules
 - Delegate to agents via Agent tool — don't do their work
